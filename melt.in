@@ -1,0 +1,75 @@
+log log_${temperature}.lammps
+
+# SETTINGS
+echo both
+units metal
+boundary p p p
+atom_style atomic
+neighbor 1.0 bin
+neigh_modify every 1 delay 5 check yes
+
+# INITIALIZE LATTICE
+lattice fcc 3.5950 orient x 1 0 0 orient y 0 1 0 orient z 0 0 1
+region box block -4 4 -4 4 -8 8
+create_box 3 box
+create_atoms 1 box
+
+# control temp in kelvin
+# variable temperature equal 2400.0
+# uncomment above if you want to specify here, specifying in command line instead
+
+# control pressure in bars
+variable pressure equal 1.0
+
+# ATOM PROPERTIES WITH POTENTIAL
+## CHANGE VARIABLE configSeed TO SAMPLE A DIFFERENT CONFIGURATION
+mass 1 55.85
+mass 2 58.69
+mass 3 52.00
+pair_style eam/alloy
+pair_coeff * * FeNiCr.eam.alloy Fe Ni Cr
+variable configSeed equal 123456
+
+set type 1 type/ratio 2 0.3 ${configSeed}
+set type 2 type/ratio 3 0.285714 ${configSeed}
+
+# OUTPUT IN LOG FILE
+variable cohesive equal etotal/atoms
+variable atomicVolume equal vol/atoms
+thermo_style custom step time temp etotal v_cohesive press vol v_atomicVolume
+
+# RELAX LATTICE AT 0 K, RESOLVING INTERNAL STRESS, DUMP STRUCTURE
+min_style cg
+min_modify dmax 1.0e-2 line quadratic
+fix min all box/relax aniso 0.0 vmax 0.01
+minimize 0.0 1.0e-4 10000 10000
+unfix min
+
+# RUN NVT DYNAMICS, MELTING LIQUID TO 3000 K WITH z < 0 ATOMS FROZEN FOR 50 ps
+region liquidRegion block INF INF INF INF 0 INF
+group liquid region liquidRegion
+region solidRegion block INF INF INF INF INF 0
+group solid region solidRegion
+
+fix nvtFix liquid nvt temp 3000.0 3000.0 $(100.0 * dt)
+velocity liquid create 3000.0 123456 dist gaussian
+fix freezeFix solid setforce 0.0 0.0 0.0
+fix recenterFix all recenter INIT INIT INIT
+dump twoPhase all atom 500 two_phase_${temperature}_${pressure}.dump
+reset_timestep 0
+run 50000
+unfix nvtFix
+unfix freezeFix
+unfix recenterFix
+undump twoPhase
+
+# RUN NPT DYNAMICS FOR 0.5 ns AT A SINGLE TEMPERATURE, BELOW MELTING TEMP THERE IS RECYSTRALLIZATION
+
+fix nptFix all npt temp ${temperature} ${temperature} $(100.0*dt) iso ${pressure} ${pressure} $(1000.0*dt)
+fix recenterFix all recenter INIT INIT INIT
+dump equilibration all atom 100 equil_${temperature}_${pressure}.dump
+reset_timestep 0
+run 500000
+unfix nptFix
+undump equilibration
+unfix recenterFix
