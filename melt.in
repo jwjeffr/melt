@@ -1,5 +1,3 @@
-log log_${temperature}.lammps
-
 # SETTINGS
 echo both
 units metal
@@ -19,7 +17,8 @@ create_atoms 1 box
 # uncomment above if you want to specify here, specifying in command line instead
 
 # control pressure in bars
-variable pressure equal 1.0
+# variable pressure equal 1.0
+# uncomment above if you want to specify here, specifying in command line instead
 
 # ATOM PROPERTIES WITH POTENTIAL
 ## CHANGE VARIABLE configSeed TO SAMPLE A DIFFERENT CONFIGURATION
