@@ -17,7 +17,7 @@ this simulation will have some output files. the important output file is named 
 
 then, to run the analysis script, run:
 
-``python percent_solid T_low T_high T_step P``
+``python percent_solid.py T_low T_high T_step P``
 
 here `T_low` is the lower temperature (in K), `T_high` is the upper temperature (in K), `T_step` is the step between these two temperatures (in K), and `P` is the control pressure (in bars)
 
