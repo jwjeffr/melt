@@ -13,7 +13,7 @@ replace `lmp` with whatever your LAMMPS executable is named. for example, if I w
 
 of course, you're free to use any other flags, like `-sf gpu` if you're using a GPU-built version of LAMMPS
 
-this simulation will have some output files. the important output file is named `equil_T_P.dump`, which has the phase-phase competition dynamics stored. be careful with renaming these files - the analysis script assumes the files are named this way.
+this simulation will have some output files. the important output file is named `equil_T_P.dump`, which has the phase-phase competition dynamics stored. be careful with renaming these files - the analysis script assumes the files are named this way. [OVITO](https://www.ovito.org/) is my go-to software for visualizing these dump files, check out their documentation for that
 
 then, to run the analysis script, run:
 
