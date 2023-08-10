@@ -2,7 +2,6 @@ import ovito
 import sys
 from dataclasses import dataclass
 import numpy as np
-from scipy.optimize import curve_fit
 
 import matplotlib as mpl
 mpl.use('Agg')
@@ -12,6 +11,10 @@ import matplotlib.pyplot as plt
 
 @dataclass
 class ProportionCalculator:
+
+    """
+    class for calculating proportion of structure (FCC, BCC, etc.) at a given frame of the simulation
+    """
 
     structure: str
     num_atoms: int
@@ -26,69 +29,40 @@ class ProportionCalculator:
         return proportion_solid
 
 
-def get_solid_percentage(input_file_name: str, structure='FCC', cutoff=None) -> float:
+def get_solid_percentage(input_file_name: str, cutoff: float, structure='FCC') -> float:
+
+    """
+    function for getting solid percentage at the final frame
+    """
     
-    tolerance = 0.01
-    proportion_solid = 1.0
-    proportion_calculator = None
-    
-    if cutoff is None:
-    
-        cutoff = 0.15
-    
-        # need to select an appropriate cutoff such that the solid-(solid + liquid) proportion is about 55% initially
-        
-        while proportion_solid > 0.55 - tolerance:
-        
-            # import file, append polyhedral template matching for structure identification
-        
-            pipeline = ovito.io.import_file(input_file_name)
-            pipeline.modifiers.append(ovito.modifiers.PolyhedralTemplateMatchingModifier(rmsd_cutoff=cutoff))
-            
-            initial_frame = pipeline.compute(0)
-            
-            if not proportion_calculator:
-                num_atoms = 0
-                for key, value in initial_frame.attributes.items():
-                    if 'PolyhedralTemplateMatching.counts' not in key:
-                        continue
-                    num_atoms += value
-                proportion_calculator = ProportionCalculator(structure=structure, num_atoms=num_atoms)
-                    
-            proportion_solid = proportion_calculator(initial_frame)
-            cutoff += -0.01
-            
-    else:
-    
-        pipeline = ovito.io.import_file(input_file_name)
-        pipeline.modifiers.append(ovito.modifiers.PolyhedralTemplateMatchingModifier(rmsd_cutoff=cutoff))
-        num_atoms = 0
-        initial_frame = pipeline.compute(0)
-        for key, value in initial_frame.attributes.items():
-            if 'PolyhedralTemplateMatching.counts' not in key:
-                continue
-            num_atoms += value
-        proportion_calculator = ProportionCalculator(structure=structure, num_atoms=num_atoms)
-            
-    # calculate final solid-(solid + liquid) proportion
+    pipeline = ovito.io.import_file(input_file_name)
+    pipeline.modifiers.append(ovito.modifiers.PolyhedralTemplateMatchingModifier(rmsd_cutoff=cutoff))
+    num_atoms = 0
+    initial_frame = pipeline.compute(0)
+    for key, value in initial_frame.attributes.items():
+        if 'PolyhedralTemplateMatching.counts' not in key:
+            continue
+        num_atoms += value
+    proportion_calculator = ProportionCalculator(structure=structure, num_atoms=num_atoms)
     
     final_frame = pipeline.compute(pipeline.source.num_frames)
     return proportion_calculator(final_frame)
-    
-    
-def logistic(temp, normalization, center):
-
-    return 1.0 / (1.0 + np.exp(-(temp - center) / normalization))
         
 if __name__ == '__main__':
 
-    low_temp = float(sys.argv[1])
-    high_temp = float(sys.argv[2])
-    step_temp = float(sys.argv[3])
+    # take command line args
+    # plot is outputted for each pressure
+    # so if i wanted the percent solid-temperature curve for P = 1 bar
+    # for temperatures between 1000 and 2000 K, with a step of 50 K, i would run:
+    # python percent_solid.py 1000 2000 50 1
+
+    low_temp = int(sys.argv[1])
+    high_temp = int(sys.argv[2])
+    step_temp = int(sys.argv[3])
+    pressure = int(sys.argv[4])
     
     temps = np.arange(low_temp, high_temp + step_temp, step=step_temp)
     percent_solid = np.zeros(temps.shape)
-    pressure = 1
     
     for index, temp in enumerate(temps):
     
@@ -101,4 +75,4 @@ if __name__ == '__main__':
     plt.xlabel('temperature (K)')
     plt.ylabel('final percent fcc after 0.5 ns')
     plt.grid()
-    plt.savefig('melting.png', dpi=800, bbox_inches='tight')
+    plt.savefig(f'melting_{pressure:.0f}.png', dpi=800, bbox_inches='tight')
