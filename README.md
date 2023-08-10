@@ -23,4 +23,6 @@ here `T_low` is the lower temperature (in K), `T_high` is the upper temperature 
 
 this script will generate a plot of percent fcc vs. temperature and save it to `melting_P.png`. if the run was long enough, there will be a very clear transition near the melting point which one can visually identify
 
-this python script depends on the external packages ovito and matplotlib. uncomment line #7 if you get a weird error with the matplotlib import
+this python script depends on the external packages ovito and matplotlib. both of these can be installed with `pip`
+
+uncomment line #7 if you get a weird error with the matplotlib import
